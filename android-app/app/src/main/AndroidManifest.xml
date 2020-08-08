@@ -19,7 +19,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ConnectedActivity"/>
+        <activity android:name=".ConnectedActivity"
+            android:parentActivityName=".ScanActivity" />
         <service android:name=".BluetoothLeService" android:enabled="true"/>
     </application>
 

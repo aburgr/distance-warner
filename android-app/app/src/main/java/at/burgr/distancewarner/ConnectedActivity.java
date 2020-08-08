@@ -36,11 +36,13 @@ import android.widget.ExpandableListView;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * This activity is shown, when we are connected to the descired BLE device. The Activity
@@ -58,10 +60,8 @@ public class ConnectedActivity extends AppCompatActivity {
     private String mDeviceAddress;
     private BluetoothLeService mBluetoothLeService;
 
-    private final String LIST_NAME = "NAME";
-    private final String LIST_UUID = "UUID";
-
-    private final String DISPLAYED_CHARACTERISTIC_UUID = "d18b1ec7-022d-423d-8bc6-8c19a57d7242";
+    private final static UUID UUID_DISTANCE_CHARACTERISTIC =
+            UUID.fromString(GattAttributes.DISTANCE_CHARACTERISTIC);
 
     // Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -165,10 +165,10 @@ public class ConnectedActivity extends AppCompatActivity {
 
             // Loops through available Characteristics.
             for (BluetoothGattCharacteristic characteristic : gattCharacteristics) {
-                String uuid = characteristic.getUuid().toString();
-                Log.i(TAG, "Found characteristic UUID: " + uuid);
+                UUID uuid = characteristic.getUuid();
+                Log.i(TAG, "Found characteristic UUID: " + uuid.toString());
 
-                if(DISPLAYED_CHARACTERISTIC_UUID.equals(uuid))   {
+                if(UUID_DISTANCE_CHARACTERISTIC.equals(uuid))   {
                     final int charaProp = characteristic.getProperties();
                     //if ((charaProp | BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
                     //    mBluetoothLeService.readCharacteristic(characteristic);
