@@ -1,0 +1,72 @@
+# should be used for production
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: db-service
+#spec:
+#  ports:
+#  - port: 6033
+#  selector:
+#    app: db
+#  clusterIP: None
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-service
+spec:
+  type: NodePort
+  selector:
+    app: db
+  ports:
+  - protocol: TCP
+    port: 6033
+    targetPort: 3306
+---
+# used for debugging with dbeaver
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-service-public
+spec:
+  type: NodePort
+  selector:
+    app: db
+  ports:
+  - protocol: TCP
+    port: 6033
+    nodePort: 30633
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+spec:
+  selector:
+    matchLabels:
+      app: db
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+      - image: mariadb:10.5
+        name: mariadb
+        env:
+        - name: MYSQL_DATABASE
+          value: distance-warner
+        - name: MYSQL_ROOT_PASSWORD
+          value: root # TODO: Use secret in real usage
+        ports:
+        - containerPort: 6033
+          name: db
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-pv-claim
