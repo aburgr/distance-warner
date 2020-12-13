@@ -39,7 +39,7 @@
             android:parentActivityName=".ScanActivity" />
 
         <service
-            android:name=".bluetooth.BluetoothLeService"
+            android:name=".bluetooth.DistanceMeasurementService"
             android:enabled="true" />
 
     </application>

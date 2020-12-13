@@ -1,9 +1,10 @@
-package at.burgr.distancewarner;
+package at.burgr.distancewarner.bluetooth;
 
 import android.widget.TextView;
 
 import org.junit.Test;
 
+import at.burgr.distancewarner.bluetooth.DistanceMeasurementService;
 import at.burgr.distancewarner.data.Warning;
 import at.burgr.distancewarner.data.WarningDao;
 import at.burgr.distancewarner.gps.GpsTracker;
@@ -17,16 +18,16 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ConnectedActivityTest {
+public class DistanceMeasurementServiceTest {
     @Test
     public void distanceChangedSunshine() {
-        ConnectedActivity testObj = createTestObject();
+        DistanceMeasurementService testObj = createTestObject();
 
-        testObj.onDistanceChanged("300");
-        testObj.onDistanceChanged("50");
-        testObj.onDistanceChanged("70");
+        testObj.onDistanceChanged(300);
+        testObj.onDistanceChanged(50);
+        testObj.onDistanceChanged(70);
         assertEquals(Integer.valueOf(50), testObj.currentMinDistance);
-        testObj.onDistanceChanged("300");
+        testObj.onDistanceChanged(300);
         assertEquals(null, testObj.currentMinDistance);
 
         verify(testObj.warningDao, timeout(5000).times(1)).insertAll(any(Warning.class));
@@ -34,11 +35,11 @@ public class ConnectedActivityTest {
 
     @Test
     public void distanceChangedNoOvertaking() {
-        ConnectedActivity testObj = createTestObject();
+        DistanceMeasurementService testObj = createTestObject();
 
-        testObj.onDistanceChanged("300");
-        testObj.onDistanceChanged("250");
-        testObj.onDistanceChanged("300");
+        testObj.onDistanceChanged(300);
+        testObj.onDistanceChanged(250);
+        testObj.onDistanceChanged(300);
         assertEquals(null, testObj.currentMinDistance);
 
         verify(testObj.warningDao, times(0)).insertAll(any(Warning.class));
@@ -46,25 +47,24 @@ public class ConnectedActivityTest {
 
     @Test
     public void distanceChangedTwoOvertakings() throws InterruptedException {
-        ConnectedActivity testObj = createTestObject();
+        DistanceMeasurementService testObj = createTestObject();
 
-        testObj.onDistanceChanged("300");
+        testObj.onDistanceChanged(300);
         assertEquals(null, testObj.currentMinDistance);
-        testObj.onDistanceChanged("50");
+        testObj.onDistanceChanged(50);
         assertEquals(Integer.valueOf(50), testObj.currentMinDistance);
-        testObj.onDistanceChanged("300");
+        testObj.onDistanceChanged(300);
         assertEquals(null, testObj.currentMinDistance);
-        testObj.onDistanceChanged("50");
+        testObj.onDistanceChanged(50);
         assertEquals(Integer.valueOf(50), testObj.currentMinDistance);
-        testObj.onDistanceChanged("300");
+        testObj.onDistanceChanged(300);
         assertEquals(null, testObj.currentMinDistance);
 
         verify(testObj.warningDao, timeout(5000).times(2)).insertAll(any(Warning.class));
     }
 
-    private ConnectedActivity createTestObject()    {
-        ConnectedActivity testObj = new ConnectedActivity();
-        testObj.distanceTextView = mock(TextView.class);
+    private DistanceMeasurementService createTestObject()    {
+        DistanceMeasurementService testObj = new DistanceMeasurementService();
         testObj.gpsTracker = mock(GpsTracker.class);
         testObj.warningDao = mock(WarningDao.class);
 

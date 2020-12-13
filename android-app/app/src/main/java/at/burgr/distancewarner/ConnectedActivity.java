@@ -35,13 +35,11 @@ import androidx.core.content.ContextCompat;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 
-import at.burgr.distancewarner.bluetooth.BluetoothLeService;
+import at.burgr.distancewarner.bluetooth.DistanceMeasurementService;
 import at.burgr.distancewarner.bluetooth.GattAttributes;
-import at.burgr.distancewarner.data.Warning;
-import at.burgr.distancewarner.data.WarningDao;
-import at.burgr.distancewarner.gps.GpsTracker;
+
+import static at.burgr.distancewarner.DistanceWarnerApplication.DISTANCE_THRESHOLD;
 
 /**
  * This activity is shown, when we are connected to the descired BLE device. The Activity
@@ -51,23 +49,14 @@ import at.burgr.distancewarner.gps.GpsTracker;
 public class ConnectedActivity extends AppCompatActivity {
     private final static String TAG = ConnectedActivity.class.getSimpleName();
 
-    private static final Integer DISTANCE_THRESHOLD = 150; // in cm
-
     public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
     private String mDeviceName; // current BLE device name
     private String mDeviceAddress; // current BLE device address
-    private BluetoothLeService mBluetoothLeService;
+    private DistanceMeasurementService mDistanceMeasurementService;
 
     // UI components
     TextView distanceTextView;
-
-    // components to interact
-    GpsTracker gpsTracker;
-    WarningDao warningDao;
-
-    // current minimal distance of overtaking. null when there is no overtaking taking place.
-    Integer currentMinDistance;
 
     private final static UUID UUID_DISTANCE_CHARACTERISTIC =
             UUID.fromString(GattAttributes.DISTANCE_CHARACTERISTIC);
@@ -77,18 +66,18 @@ public class ConnectedActivity extends AppCompatActivity {
 
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
-            mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
-            if (!mBluetoothLeService.initialize()) {
+            mDistanceMeasurementService = ((DistanceMeasurementService.LocalBinder) service).getService();
+            if (!mDistanceMeasurementService.initialize()) {
                 Log.e(TAG, "Unable to initialize Bluetooth");
                 finish();
             }
             // Automatically connects to the device upon successful start-up initialization.
-            mBluetoothLeService.connect(mDeviceAddress);
+            mDistanceMeasurementService.connect(mDeviceAddress);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
-            mBluetoothLeService = null;
+            mDistanceMeasurementService = null;
         }
     };
 
@@ -102,16 +91,16 @@ public class ConnectedActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
-            if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
+            if (DistanceMeasurementService.ACTION_GATT_CONNECTED.equals(action)) {
                 invalidateOptionsMenu();
-            } else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
+            } else if (DistanceMeasurementService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 invalidateOptionsMenu();
                 finish();
-            } else if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
+            } else if (DistanceMeasurementService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
                 // Show all the supported services and characteristics on the user interface.
-                displayGattServices(mBluetoothLeService.getSupportedGattServices());
-            } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
-                onDistanceChanged(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
+                displayGattServices(mDistanceMeasurementService.getSupportedGattServices());
+            } else if (DistanceMeasurementService.ACTION_DATA_AVAILABLE.equals(action)) {
+                setDistanceField(intent.getStringExtra(DistanceMeasurementService.EXTRA_DATA));
             }
         }
     };
@@ -129,23 +118,16 @@ public class ConnectedActivity extends AppCompatActivity {
 
         getSupportActionBar().setTitle(mDeviceName);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
+        Intent gattServiceIntent = new Intent(this, DistanceMeasurementService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
-
-        gpsTracker = new GpsTracker(this);
-        if(!gpsTracker.canGetLocation()) {
-            gpsTracker.showSettingsAlert();
-        }
-
-        warningDao = ((DistanceWarnerApplication) this.getApplication()).database.warningDao();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
-        if (mBluetoothLeService != null) {
-            final boolean result = mBluetoothLeService.connect(mDeviceAddress);
+        if (mDistanceMeasurementService != null) {
+            final boolean result = mDistanceMeasurementService.connect(mDeviceAddress);
             Log.d(TAG, "Connect request result=" + result);
         }
     }
@@ -160,62 +142,14 @@ public class ConnectedActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         unbindService(mServiceConnection);
-        mBluetoothLeService = null;
-        gpsTracker.stopUsingGPS();
-
-        // write all warnings to database and delete them(for testing purposes)
-        Executors.newCachedThreadPool().execute(new Runnable() {
-            @Override
-            public void run() {
-                Log.i(TAG, "Logging and deleting all Warnings");
-                for (Warning warning : warningDao.getAll()) {
-                    Log.i(TAG, warning.toString());
-                    warningDao.delete(warning);
-                }
-            }
-        });
+        mDistanceMeasurementService = null;
     }
 
-    void onDistanceChanged(String distance) {
-        if (distance == null) {
-            return;
-        }
+    private void setDistanceField(String distance) {
+        distanceTextView.setText(distance);
 
-        final Integer distanceAsInt = Integer.valueOf(distance);
-        setDistanceField(distanceAsInt);
-
-        // check if distance is again greater than threshold (this means the car passed already)
-        // then save minimum distance of this overtaking
-        if (distanceAsInt > DISTANCE_THRESHOLD && currentMinDistance != null) {
-            // save location in database
-            Log.i(TAG, "Distance violation! lat:" + gpsTracker.getLatitude() + ",long:" + gpsTracker.getLongitude());
-
-            final double lat = gpsTracker.canGetLocation() ? gpsTracker.getLatitude() : 0;
-            final double lon = gpsTracker.canGetLocation() ? gpsTracker.getLongitude() : 0;
-            final int distanceToSave = currentMinDistance;
-            Executors.newCachedThreadPool().execute(new Runnable() {
-                @Override
-                public void run() {
-                    warningDao.insertAll(new Warning(System.currentTimeMillis(), lat, lon, distanceToSave));
-                }
-            });
-            currentMinDistance = null;
-        } else {
-            // set minDistance,
-            // when overtaking begins
-            // or distance is even smaller
-            if (distanceAsInt < DISTANCE_THRESHOLD) {
-                if (currentMinDistance == null || distanceAsInt < currentMinDistance) {
-                    currentMinDistance = distanceAsInt;
-                }
-            }
-        }
-    }
-
-    private void setDistanceField(Integer distance) {
-        distanceTextView.setText(distance.toString());
-
-        if (distance < DISTANCE_THRESHOLD) {
+        Integer distanceAsInt = Integer.valueOf(distance);
+        if (distanceAsInt < DISTANCE_THRESHOLD) {
             if(getResources() != null)  { // dirty because of unit test
                 distanceTextView.setTextColor(ContextCompat.getColor(this, R.color.colorPrimaryBright));
             }
@@ -245,7 +179,7 @@ public class ConnectedActivity extends AppCompatActivity {
                     //    mBluetoothLeService.readCharacteristic(characteristic);
                     //}
                     if ((charaProp | BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
-                        mBluetoothLeService.setCharacteristicNotification(
+                        mDistanceMeasurementService.setCharacteristicNotification(
                                 characteristic, true);
                     }
                 }
@@ -255,10 +189,10 @@ public class ConnectedActivity extends AppCompatActivity {
 
     private static IntentFilter makeGattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
-        intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
-        intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
+        intentFilter.addAction(DistanceMeasurementService.ACTION_GATT_CONNECTED);
+        intentFilter.addAction(DistanceMeasurementService.ACTION_GATT_DISCONNECTED);
+        intentFilter.addAction(DistanceMeasurementService.ACTION_GATT_SERVICES_DISCOVERED);
+        intentFilter.addAction(DistanceMeasurementService.ACTION_DATA_AVAILABLE);
         return intentFilter;
     }
 }

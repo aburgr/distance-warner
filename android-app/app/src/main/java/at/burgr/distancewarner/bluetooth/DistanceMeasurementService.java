@@ -32,15 +32,26 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import androidx.room.Room;
+
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+
+import at.burgr.distancewarner.DistanceWarnerApplication;
+import at.burgr.distancewarner.data.AppDatabase;
+import at.burgr.distancewarner.data.Warning;
+import at.burgr.distancewarner.data.WarningDao;
+import at.burgr.distancewarner.gps.GpsTracker;
+
+import static at.burgr.distancewarner.DistanceWarnerApplication.DISTANCE_THRESHOLD;
 
 /**
  * Service for managing connection and data communication with a GATT server hosted on a
  * given Bluetooth LE device.
  */
-public class BluetoothLeService extends Service {
-    private final static String TAG = BluetoothLeService.class.getSimpleName();
+public class DistanceMeasurementService extends Service {
+    private final static String TAG = DistanceMeasurementService.class.getSimpleName();
 
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
@@ -68,6 +79,13 @@ public class BluetoothLeService extends Service {
 
     public final static UUID UUID_DISTANCE_CHARACTERISTIC =
             UUID.fromString(GattAttributes.DISTANCE_CHARACTERISTIC);
+
+    // components to interact
+    GpsTracker gpsTracker;
+    WarningDao warningDao;
+
+    // current minimal distance of overtaking. null when there is no overtaking taking place.
+    Integer currentMinDistance;
 
     // Implements callback methods for GATT events that the app cares about.  For example,
     // connection change and services discovered.
@@ -131,13 +149,48 @@ public class BluetoothLeService extends Service {
             Integer intValue = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT32, 0);
             Log.d(TAG, String.format("Received distance measurement: %d", intValue));
             intent.putExtra(EXTRA_DATA, String.valueOf(intValue));
+
+            onDistanceChanged(intValue);
         }
         sendBroadcast(intent);
     }
 
+    void onDistanceChanged(Integer distance) {
+        if (distance == null) {
+            return;
+        }
+
+        // check if distance is again greater than threshold (this means the car passed already)
+        // then save minimum distance of this overtaking
+        if (distance > DISTANCE_THRESHOLD && currentMinDistance != null) {
+            // save location in database
+            final double lat = gpsTracker.canGetLocation() ? gpsTracker.getLatitude() : 0;
+            final double lon = gpsTracker.canGetLocation() ? gpsTracker.getLongitude() : 0;
+            final int distanceToSave = currentMinDistance;
+            Executors.newCachedThreadPool().execute(new Runnable() {
+                @Override
+                public void run() {
+                    Warning warning = new Warning(System.currentTimeMillis(), lat, lon, distanceToSave);
+                    Log.i(TAG, "Distance warning: " + warning);
+                    warningDao.insertAll(warning);
+                }
+            });
+            currentMinDistance = null;
+        } else {
+            // set minDistance,
+            // when overtaking begins
+            // or distance is even smaller
+            if (distance < DISTANCE_THRESHOLD) {
+                if (currentMinDistance == null || distance < currentMinDistance) {
+                    currentMinDistance = distance;
+                }
+            }
+        }
+    }
+
     public class LocalBinder extends Binder {
-        public BluetoothLeService getService() {
-            return BluetoothLeService.this;
+        public DistanceMeasurementService getService() {
+            return DistanceMeasurementService.this;
         }
     }
 
@@ -176,6 +229,14 @@ public class BluetoothLeService extends Service {
         mBluetoothAdapter = mBluetoothManager.getAdapter();
         if (mBluetoothAdapter == null) {
             Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
+            return false;
+        }
+
+        warningDao = AppDatabase.getInstance(this).warningDao();
+
+        gpsTracker = new GpsTracker(this);
+        if(!gpsTracker.canGetLocation()) {
+            Log.e(TAG, "Unable to obtain the location from GpsTracker.");
             return false;
         }
 
@@ -248,6 +309,8 @@ public class BluetoothLeService extends Service {
         }
         mBluetoothGatt.close();
         mBluetoothGatt = null;
+
+        gpsTracker.stopUsingGPS();
     }
 
     /**
