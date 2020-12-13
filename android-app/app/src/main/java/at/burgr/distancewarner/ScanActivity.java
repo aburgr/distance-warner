@@ -33,7 +33,7 @@ public class ScanActivity extends AppCompatActivity {
     private TextView connectionStateTextView;
     private boolean connected;
 
-    private final static int REQUEST_ENABLE_BT = 1;
+    private static final int REQUEST_ENABLE_BT = 1;
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 1;
     private final static String TAG = ScanActivity.class.getSimpleName();
 

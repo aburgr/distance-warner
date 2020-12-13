@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package at.burgr.distancewarner;
+package at.burgr.distancewarner.bluetooth;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
@@ -126,44 +126,17 @@ public class BluetoothLeService extends Service {
                                  final BluetoothGattCharacteristic characteristic) {
         final Intent intent = new Intent(action);
 
-        // This is special handling for the Heart Rate Measurement profile.  Data parsing is
-        // carried out as per profile specifications:
-        // http://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.heart_rate_measurement.xml
-        if (UUID_HEART_RATE_MEASUREMENT.equals(characteristic.getUuid())) {
-            int flag = characteristic.getProperties();
-            int format = -1;
-            if ((flag & 0x01) != 0) {
-                format = BluetoothGattCharacteristic.FORMAT_UINT16;
-                Log.d(TAG, "Heart rate format UINT16.");
-            } else {
-                format = BluetoothGattCharacteristic.FORMAT_UINT8;
-                Log.d(TAG, "Heart rate format UINT8.");
-            }
-            final int heartRate = characteristic.getIntValue(format, 1);
-            Log.d(TAG, String.format("Received heart rate: %d", heartRate));
-            intent.putExtra(EXTRA_DATA, String.valueOf(heartRate));
-        } else {
-            // Distance measurement is formatted as integer
-            if (UUID_DISTANCE_CHARACTERISTIC.equals(characteristic.getUuid())) {
-                Integer intValue = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT32, 0);
-                Log.d(TAG, String.format("Received distance measurement: %d", intValue));
-                intent.putExtra(EXTRA_DATA, String.valueOf(intValue));
-            } else  {
-                // For all other profiles, writes the data formatted in HEX.
-                final byte[] data = characteristic.getValue();
-                if (data != null && data.length > 0) {
-                    final StringBuilder stringBuilder = new StringBuilder(data.length);
-                    for(byte byteChar : data)
-                        stringBuilder.append(String.format("%02X ", byteChar));
-                    intent.putExtra(EXTRA_DATA, new String(data) + "\n" + stringBuilder.toString());
-                }
-            }
+         // Distance measurement is formatted as integer
+        if (UUID_DISTANCE_CHARACTERISTIC.equals(characteristic.getUuid())) {
+            Integer intValue = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT32, 0);
+            Log.d(TAG, String.format("Received distance measurement: %d", intValue));
+            intent.putExtra(EXTRA_DATA, String.valueOf(intValue));
         }
         sendBroadcast(intent);
     }
 
     public class LocalBinder extends Binder {
-        BluetoothLeService getService() {
+        public BluetoothLeService getService() {
             return BluetoothLeService.this;
         }
     }

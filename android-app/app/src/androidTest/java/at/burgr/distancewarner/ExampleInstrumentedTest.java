@@ -1,12 +1,16 @@
 package at.burgr.distancewarner;
 
 import android.content.Context;
+import android.widget.TextView;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import at.burgr.distancewarner.data.WarningDao;
+import at.burgr.distancewarner.gps.GpsTracker;
 
 import static org.junit.Assert.*;
 

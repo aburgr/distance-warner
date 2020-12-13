@@ -16,9 +16,7 @@
 
 package at.burgr.distancewarner;
 
-import android.app.Activity;
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -26,23 +24,24 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-import android.widget.ExpandableListView;
-import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Executors;
+
+import at.burgr.distancewarner.bluetooth.BluetoothLeService;
+import at.burgr.distancewarner.bluetooth.GattAttributes;
+import at.burgr.distancewarner.data.Warning;
+import at.burgr.distancewarner.data.WarningDao;
+import at.burgr.distancewarner.gps.GpsTracker;
 
 /**
  * This activity is shown, when we are connected to the descired BLE device. The Activity
@@ -52,13 +51,23 @@ import java.util.UUID;
 public class ConnectedActivity extends AppCompatActivity {
     private final static String TAG = ConnectedActivity.class.getSimpleName();
 
+    private static final Integer DISTANCE_THRESHOLD = 150; // in cm
+
     public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
-
-    private TextView distanceTextView;
-    private String mDeviceName;
-    private String mDeviceAddress;
+    private String mDeviceName; // current BLE device name
+    private String mDeviceAddress; // current BLE device address
     private BluetoothLeService mBluetoothLeService;
+
+    // UI components
+    TextView distanceTextView;
+
+    // components to interact
+    GpsTracker gpsTracker;
+    WarningDao warningDao;
+
+    // current minimal distance of overtaking. null when there is no overtaking taking place.
+    Integer currentMinDistance;
 
     private final static UUID UUID_DISTANCE_CHARACTERISTIC =
             UUID.fromString(GattAttributes.DISTANCE_CHARACTERISTIC);
@@ -102,7 +111,7 @@ public class ConnectedActivity extends AppCompatActivity {
                 // Show all the supported services and characteristics on the user interface.
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
             } else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
-                displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
+                onDistanceChanged(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
             }
         }
     };
@@ -122,6 +131,13 @@ public class ConnectedActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+
+        gpsTracker = new GpsTracker(this);
+        if(!gpsTracker.canGetLocation()) {
+            gpsTracker.showSettingsAlert();
+        }
+
+        warningDao = ((DistanceWarnerApplication) this.getApplication()).database.warningDao();
     }
 
     @Override
@@ -145,11 +161,66 @@ public class ConnectedActivity extends AppCompatActivity {
         super.onDestroy();
         unbindService(mServiceConnection);
         mBluetoothLeService = null;
+        gpsTracker.stopUsingGPS();
+
+        // write all warnings to database and delete them(for testing purposes)
+        Executors.newCachedThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                Log.i(TAG, "Logging and deleting all Warnings");
+                for (Warning warning : warningDao.getAll()) {
+                    Log.i(TAG, warning.toString());
+                    warningDao.delete(warning);
+                }
+            }
+        });
     }
 
-    private void displayData(String data) {
-        if (data != null) {
-            distanceTextView.setText(data);
+    void onDistanceChanged(String distance) {
+        if (distance == null) {
+            return;
+        }
+
+        final Integer distanceAsInt = Integer.valueOf(distance);
+        setDistanceField(distanceAsInt);
+
+        // check if distance is again greater than threshold (this means the car passed already)
+        // then save minimum distance of this overtaking
+        if (distanceAsInt > DISTANCE_THRESHOLD && currentMinDistance != null) {
+            // save location in database
+            Log.i(TAG, "Distance violation! lat:" + gpsTracker.getLatitude() + ",long:" + gpsTracker.getLongitude());
+
+            final double lat = gpsTracker.canGetLocation() ? gpsTracker.getLatitude() : 0;
+            final double lon = gpsTracker.canGetLocation() ? gpsTracker.getLongitude() : 0;
+            final int distanceToSave = currentMinDistance;
+            Executors.newCachedThreadPool().execute(new Runnable() {
+                @Override
+                public void run() {
+                    warningDao.insertAll(new Warning(System.currentTimeMillis(), lat, lon, distanceToSave));
+                }
+            });
+            currentMinDistance = null;
+        } else {
+            // set minDistance,
+            // when overtaking begins
+            // or distance is even smaller
+            if (distanceAsInt < DISTANCE_THRESHOLD) {
+                if (currentMinDistance == null || distanceAsInt < currentMinDistance) {
+                    currentMinDistance = distanceAsInt;
+                }
+            }
+        }
+    }
+
+    private void setDistanceField(Integer distance) {
+        distanceTextView.setText(distance.toString());
+
+        if (distance < DISTANCE_THRESHOLD) {
+            if(getResources() != null)  { // dirty because of unit test
+                distanceTextView.setTextColor(ContextCompat.getColor(this, R.color.colorPrimaryBright));
+            }
+        } else  {
+            distanceTextView.setTextColor(Color.BLACK);
         }
     }
 

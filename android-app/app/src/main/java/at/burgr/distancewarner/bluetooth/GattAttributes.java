@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package at.burgr.distancewarner;
+package at.burgr.distancewarner.bluetooth;
 
 import java.util.HashMap;
 

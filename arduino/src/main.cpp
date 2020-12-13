@@ -1,7 +1,7 @@
 #include <ArduinoBLE.h>
 #include "Ultrasonic.h"
 
-#define MEASURE_INTERVAL_MS 50
+#define MEASURE_INTERVAL_MS 200
 #define WAITING_INTERVAL_MS 1000
 #define MAX_DISTANCE 250 // Maximum distance (in cm) to ping.
 
@@ -57,7 +57,7 @@ void loop()
   Serial.print("Disconnected from central: ");
   Serial.println(central.address());
 
-  delay(WAITING_INTERVAL_MS / 2));
+  delay(WAITING_INTERVAL_MS / 2);
   digitalWrite(LED_BUILTIN, LOW);
   delay(WAITING_INTERVAL_MS / 2);
 }
