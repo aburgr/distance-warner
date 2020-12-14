@@ -15,4 +15,8 @@
     <string name="ble_not_supported">BLE is not supported</string>
 
     <string name="title_activity_maps">Map with Marker</string>
+
+    <string name="title_scan">Scan</string>
+    <string name="title_connected">Connected</string>
+    <string name="title_maps">Maps</string>
 </resources>

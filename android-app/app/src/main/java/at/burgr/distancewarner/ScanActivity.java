@@ -15,16 +15,18 @@ import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * This activity is shown at start. It requests permissions and scans for the BLE device to connect
  */
-public class ScanActivity extends AppCompatActivity {
+public class ScanActivity extends BaseActivity {
 
     BluetoothManager btManager;
     BluetoothAdapter btAdapter;
@@ -40,10 +42,17 @@ public class ScanActivity extends AppCompatActivity {
     private static final String BLE_DEVICE_NAME = "DistanceSensor";
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_scan);
+    int getContentViewId() {
+        return R.layout.activity_scan;
+    }
 
+    @Override
+    int getNavigationMenuItemId() {
+        return R.id.navigation_scan;
+    }
+
+    @Override
+    protected void getCreateInActivity(Bundle savedInstanceState) {
         btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         btAdapter = btManager.getAdapter();
         btScanner = btAdapter.getBluetoothLeScanner();

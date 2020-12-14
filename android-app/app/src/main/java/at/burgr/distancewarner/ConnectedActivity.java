@@ -28,8 +28,10 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.MenuItem;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
@@ -46,7 +48,7 @@ import static at.burgr.distancewarner.DistanceWarnerApplication.DISTANCE_THRESHO
  * communicates with {@code BluetoothLeService}, which in turn interacts with the
  * Bluetooth LE API.
  */
-public class ConnectedActivity extends AppCompatActivity {
+public class ConnectedActivity extends BaseActivity {
     private final static String TAG = ConnectedActivity.class.getSimpleName();
 
     public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
@@ -60,6 +62,17 @@ public class ConnectedActivity extends AppCompatActivity {
 
     private final static UUID UUID_DISTANCE_CHARACTERISTIC =
             UUID.fromString(GattAttributes.DISTANCE_CHARACTERISTIC);
+
+
+    @Override
+    int getContentViewId() {
+        return R.layout.activity_connected;
+    }
+
+    @Override
+    int getNavigationMenuItemId() {
+        return R.id.navigation_connected;
+    }
 
     // Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -105,11 +118,7 @@ public class ConnectedActivity extends AppCompatActivity {
         }
     };
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_connected);
-
+    protected void getCreateInActivity(Bundle savedInstanceState) {
         final Intent intent = getIntent();
         mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
         mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
@@ -133,7 +142,7 @@ public class ConnectedActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onPause() {
+    public void onPause() {
         super.onPause();
         unregisterReceiver(mGattUpdateReceiver);
     }
