@@ -15,11 +15,6 @@
 package at.burgr.distancewarner;
 
 import android.os.Bundle;
-import android.util.Log;
-import android.view.MenuItem;
-
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;

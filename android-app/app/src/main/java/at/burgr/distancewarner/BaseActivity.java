@@ -18,11 +18,11 @@ package at.burgr.distancewarner;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 /**
@@ -44,17 +44,14 @@ public abstract class BaseActivity extends AppCompatActivity implements BottomNa
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        navigationView.postDelayed(() -> {
-            int itemId = item.getItemId();
-            if (itemId == R.id.navigation_scan) {
-                startActivity(new Intent(this, ScanActivity.class));
-            } else if (itemId == R.id.navigation_connected) {
-                startActivity(new Intent(this, ConnectedActivity.class));
-            } else if (itemId == R.id.navigation_maps) {
-                startActivity(new Intent(this, MapsActivity.class));
-            }
-            finish();
-        }, 100);
+        int itemId = item.getItemId();
+        if (itemId == R.id.navigation_scan) {
+            startActivity(new Intent(this, ScanActivity.class));
+        } else if (itemId == R.id.navigation_connected) {
+            startActivity(new Intent(this, ConnectedActivity.class));
+        } else if (itemId == R.id.navigation_maps) {
+            startActivity(new Intent(this, MapsActivity.class));
+        }
         return true;
     }
 

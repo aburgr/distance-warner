@@ -9,14 +9,14 @@
 
     <item
         android:id="@+id/navigation_connected"
-        android:icon="@drawable/common_google_signin_btn_icon_dark_normal"
+        android:icon="@drawable/common_google_signin_btn_icon_dark"
         android:title="@string/title_connected"
         android:enabled="true"
         />
 
     <item
         android:id="@+id/navigation_maps"
-        android:icon="@drawable/common_google_signin_btn_icon_disabled"
+        android:icon="@drawable/common_google_signin_btn_icon_dark"
         android:title="@string/title_maps"
         android:enabled="true"
         />
