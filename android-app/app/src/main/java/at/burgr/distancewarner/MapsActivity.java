@@ -15,7 +15,6 @@
 package at.burgr.distancewarner;
 
 import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -28,16 +27,23 @@ import com.google.android.gms.maps.model.MarkerOptions;
  * An activity that displays a Google map with a marker (pin) to indicate a particular location.
  */
 // [START maps_marker_on_map_ready]
-public class MapsActivity extends AppCompatActivity
+public class MapsActivity extends BaseActivity
         implements OnMapReadyCallback {
+
+
+    @Override
+    int getContentViewId() {
+        return R.layout.activity_maps;
+    }
+
+    @Override
+    int getNavigationMenuItemId() {
+        return R.id.navigation_maps;
+    }
 
     // [START_EXCLUDE]
     // [START maps_marker_get_map_async]
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        // Retrieve the content view that renders the map.
-        setContentView(R.layout.activity_maps);
+    protected void getCreateInActivity(Bundle savedInstanceState) {
 
         // Get the SupportMapFragment and request notification when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
