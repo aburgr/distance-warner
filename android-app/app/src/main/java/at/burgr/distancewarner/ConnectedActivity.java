@@ -68,7 +68,7 @@ public class ConnectedActivity extends BaseActivity {
 
     @Override
     int getNavigationMenuItemId() {
-        return R.id.navigation_connected;
+        return R.id.navigation_scan;
     }
 
     // Code to manage Service lifecycle.

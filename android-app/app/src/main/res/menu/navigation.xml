@@ -2,21 +2,20 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/navigation_scan"
-        android:icon="@drawable/common_google_signin_btn_icon_dark"
+        android:icon="@drawable/ic_pedal_bike_24px"
         android:title="@string/title_scan"
         android:enabled="true"
         />
 
     <item
-        android:id="@+id/navigation_connected"
-        android:icon="@drawable/common_google_signin_btn_icon_dark"
-        android:title="@string/title_connected"
+        android:id="@+id/navigation_list"
         android:enabled="true"
-        />
+        android:icon="@drawable/ic_list_24px"
+        android:title="@string/title_list" />
 
     <item
         android:id="@+id/navigation_maps"
-        android:icon="@drawable/common_google_signin_btn_icon_dark"
+        android:icon="@drawable/ic_map_24px"
         android:title="@string/title_maps"
         android:enabled="true"
         />

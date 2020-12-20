@@ -3,11 +3,11 @@
     package="at.burgr.distancewarner">
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.BLUETOOTH"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
 
     <application
-        android:name="at.burgr.distancewarner.DistanceWarnerApplication"
+        android:name=".DistanceWarnerApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -26,22 +26,26 @@
             android:name=".ConnectedActivity"
             android:parentActivityName=".ScanActivity" />
 
-        <!--
-             The API key for Google Maps-based APIs.
-        -->
+
+        <!-- The API key for Google Maps-based APIs. -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/maps_api_key" />
 
+
+        <activity
+            android:name=".ListActivity"
+            android:label="@string/title_list"
+            android:parentActivityName=".ScanActivity" />
+
         <activity
             android:name=".MapsActivity"
-            android:label="@string/title_activity_maps"
+            android:label="@string/title_maps"
             android:parentActivityName=".ScanActivity" />
 
         <service
             android:name=".bluetooth.DistanceMeasurementService"
             android:enabled="true" />
-
     </application>
 
 </manifest>

@@ -24,12 +24,15 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 /**
- * An activity that displays a Google map with a marker (pin) to indicate a particular location.
+ * An activity that displays a Google map with markers to all stored warnings
  */
 // [START maps_marker_on_map_ready]
 public class MapsActivity extends BaseActivity
         implements OnMapReadyCallback {
 
+    private GpsTracker gpsTracker;
+    private WarningDao warningDao;
+    private DateFormat dateFormat;
 
     @Override
     int getContentViewId() {
@@ -44,7 +47,6 @@ public class MapsActivity extends BaseActivity
     // [START_EXCLUDE]
     // [START maps_marker_get_map_async]
     protected void getCreateInActivity(Bundle savedInstanceState) {
-
         // Get the SupportMapFragment and request notification when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);

@@ -47,8 +47,8 @@ public abstract class BaseActivity extends AppCompatActivity implements BottomNa
         int itemId = item.getItemId();
         if (itemId == R.id.navigation_scan) {
             startActivity(new Intent(this, ScanActivity.class));
-        } else if (itemId == R.id.navigation_connected) {
-            startActivity(new Intent(this, ConnectedActivity.class));
+        } else if (itemId == R.id.navigation_list) {
+            startActivity(new Intent(this, ListActivity.class));
         } else if (itemId == R.id.navigation_maps) {
             startActivity(new Intent(this, MapsActivity.class));
         }
