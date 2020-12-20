@@ -72,6 +72,7 @@ public class ScanActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        stopScanning();
         startScanning();
     }
 

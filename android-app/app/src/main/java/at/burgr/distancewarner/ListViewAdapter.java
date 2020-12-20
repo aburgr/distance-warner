@@ -17,9 +17,9 @@ import at.burgr.distancewarner.data.Warning;
 
 public class ListViewAdapter extends ArrayAdapter<Warning> {
 
-    private int resourceLayout;
-    private Context mContext;
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
+    private final int resourceLayout;
+    private final Context mContext;
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd-M-yyyy hh:mm:ss");
 
     public ListViewAdapter(Context context, int resource, List<Warning> items) {
         super(context, resource, items);
@@ -49,7 +49,7 @@ public class ListViewAdapter extends ArrayAdapter<Warning> {
             }
 
             if (tt2 != null) {
-                tt2.setText(Integer.toString(p.distance));
+                tt2.setText(p.distance + " " + mContext.getResources().getText(R.string.distanceUnit));
             }
         }
 

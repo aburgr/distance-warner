@@ -9,11 +9,8 @@ import java.util.List;
 
 @Dao
 public interface WarningDao {
-    @Query("SELECT * FROM warning")
+    @Query("SELECT * FROM warning order by timestamp desc")
     List<Warning> getAll();
-
-    @Query("SELECT * FROM warning WHERE timestamp IN (:timestamps)")
-    List<Warning> loadAllByIds(int[] timestamps);
 
     @Insert
     void insertAll(Warning... warning);
@@ -21,4 +18,6 @@ public interface WarningDao {
     @Delete
     void delete(Warning warning);
 
+    @Query("DELETE FROM warning")
+    void deleteAll();
 }

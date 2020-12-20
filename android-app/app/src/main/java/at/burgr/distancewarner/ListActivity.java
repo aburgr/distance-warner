@@ -15,11 +15,16 @@
 package at.burgr.distancewarner;
 
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 
 import java.util.List;
 
@@ -37,20 +42,33 @@ public class ListActivity extends BaseActivity {
     @Override
     void getCreateInActivity(Bundle savedInstanceState) {
         setContentView(R.layout.activity_list);
+        warningList = (ListView)findViewById(R.id.warningListView);
 
         warningDao = AppDatabase.getInstance(this).warningDao();
-        final List<Warning> all = warningDao.getAll();
 
-        ArrayAdapter<Warning> arrayAdapter = new ListViewAdapter(this, R.layout.warning_list, all);
-        warningList = (ListView)findViewById(R.id.warningListView);
-        warningList.setAdapter(arrayAdapter);
+        getNewContent();
+    }
 
-        warningList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Toast.makeText(getBaseContext(), all.get(position).toString(), Toast.LENGTH_SHORT).show();
-            }
-        });
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater menuInflater = new MenuInflater(this);
+        menuInflater.inflate(R.menu.list_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.list_menu_delete_all:
+                warningDao.deleteAll();
+                getNewContent();
+                return true;
+            case R.id.list_menu_refresh:
+                getNewContent();
+                return true;
+            default:
+                return false;
+        }
     }
 
     @Override
@@ -63,4 +81,18 @@ public class ListActivity extends BaseActivity {
         return R.id.navigation_list;
     }
 
+
+    private void getNewContent() {
+        final List<Warning> all = warningDao.getAll();
+
+        ArrayAdapter<Warning> arrayAdapter = new ListViewAdapter(this, R.layout.warning_list, all);
+        warningList.setAdapter(arrayAdapter);
+
+        warningList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Toast.makeText(getBaseContext(), all.get(position).toString(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
 }
