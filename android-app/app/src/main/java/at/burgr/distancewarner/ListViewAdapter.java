@@ -10,6 +10,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 import at.burgr.distancewarner.data.Warning;
@@ -44,7 +45,7 @@ public class ListViewAdapter extends ArrayAdapter<Warning> {
             TextView tt2 = (TextView) v.findViewById(R.id.tvWarningDistance);
 
             if (tt1 != null) {
-                tt1.setText(dateFormat.format(p.timestamp));
+                tt1.setText(dateFormat.format(new Date(p.timestamp)));
             }
 
             if (tt2 != null) {

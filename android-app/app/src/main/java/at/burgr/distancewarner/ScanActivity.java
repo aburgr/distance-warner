@@ -15,7 +15,9 @@ import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.CompoundButton;
+import android.widget.ProgressBar;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -27,8 +29,7 @@ public class ScanActivity extends BaseActivity {
     BluetoothManager btManager;
     BluetoothAdapter btAdapter;
     BluetoothLeScanner btScanner;
-    private Switch scanButton;
-    private TextView connectionStateTextView;
+    private ProgressBar progressBar;
     private boolean connected;
 
     private static final int REQUEST_ENABLE_BT = 1;
@@ -52,7 +53,7 @@ public class ScanActivity extends BaseActivity {
         btManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         btAdapter = btManager.getAdapter();
         btScanner = btAdapter.getBluetoothLeScanner();
-        scanButton = findViewById(R.id.scanSwitch);
+        progressBar = findViewById(R.id.progressBar);
 
         if (btAdapter != null && !btAdapter.isEnabled()) {
             Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -61,46 +62,22 @@ public class ScanActivity extends BaseActivity {
 
         // Make sure we have access fine location enabled, if not, prompt the user to enable it
         if (this.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("This app needs location access");
-            builder.setMessage("Please grant location access so this app can detect peripherals.");
-            builder.setPositiveButton(android.R.string.ok, null);
-            builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                @Override
-                public void onDismiss(DialogInterface dialog) {
-                    requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSION_REQUEST_FINE_LOCATION);
-                }
-            });
-            builder.show();
+            requestPermission(Manifest.permission.ACCESS_FINE_LOCATION, PERMISSION_REQUEST_FINE_LOCATION);
         }
 
-        Switch scanButton = findViewById(R.id.scanSwitch);
-        scanButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    startScanning();
-                } else {
-                    stopScanning();
-                }
-            }
-
-        });
-        connectionStateTextView = findViewById(R.id.connectionStateTextView);
+        startScanning();
+        progressBar.setIndeterminate(true);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
-        stopScanning();
+        startScanning();
     }
 
     public void startScanning() {
-        scanButton.setChecked(true);
         Log.i(TAG,"start scanning");
-        connectionStateTextView.setText(R.string.scanning);
+        progressBar.setVisibility(View.VISIBLE);
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
@@ -111,9 +88,8 @@ public class ScanActivity extends BaseActivity {
 
     public void stopScanning() {
         connected = false;
-        scanButton.setChecked(false);
+        progressBar.setVisibility(View.GONE);
         Log.i(TAG,"stop scanning");
-        connectionStateTextView.setText(R.string.stopped);
         AsyncTask.execute(new Runnable() {
             @Override
             public void run() {
